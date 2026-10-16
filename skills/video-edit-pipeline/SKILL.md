@@ -22,6 +22,8 @@ On first use, read [setup and harnesses](references/harnesses.md). Run `python3 
 
 For a full edit, follow [the visual pipeline](references/pipeline.md): cut candidates and source discovery → capable editorial cut review → one checked cut write → post-cut timings → retained proof and finishing → visuals → final export review → optional reels. Read [model roles](references/model-routing.md) when assigning workers and [starter scenarios](references/scenarios.md) when beginning from raw footage and a finished style reference. Timed visuals and final captions use the committed post-cut timeline, never the original timings.
 
+For raw-to-reference requests, use the [starter model/effort table and copyable prompt](references/scenarios.md#recommended-starting-model). Begin with a separate scene-scoped pilot and working copy; carry its accepted treatment into the full job. The public README includes the same kickoff guidance for the user. Keep detailed provider choices in the linked routing reference so they can be refreshed without enlarging every worker's context.
+
 ## Plan once; send small packets
 
 For preparation without execution, use `--plan-only`; retain unresolved findings in a prepared receipt. Create a local job folder outside the skill/repository. Save the outcome, allowed spend, model/billing route, timeline hash, scene index, and artifact paths there. Use `run.py init`, `ingest`, and `next`. Raw transcripts, media, receipts, and account details stay local.

@@ -26,7 +26,30 @@ flowchart TD
     J --> K[Optional reels from reviewed master]
 ```
 
-Start with **GPT-6.1 Sol in Codex**, **Sonnet 5.5 in Claude Code**, or **Grok 4.7 in Grok Build** when available. Use Haiku 5.5 or GPT-6 Luna for bounded proposals when the harness can actually route them; reserve Opus 5.5 or GPT-6 Astra for difficult escalations. These are dated recommendations, not a cross-model quality benchmark. [Current official sources and runtime-selection caveats](skills/video-edit-pipeline/references/model-routing.md).
+## Recommended kickoff: model, effort, and team
+
+For raw footage plus a finished style reference, start with a capable coordinator at **High effort**. In Codex, the starting recommendation is **GPT-6.1 Sol · High effort · Standard speed**. Check the first representative section against the reference before scaling the treatment to the full video.
+
+| Harness | Coordinator | Preparation workers | Escalation |
+|---|---|---|---|
+| Codex | **GPT-6.1 Sol · High** for story/cut planning and acceptance reviews; **Medium** for routine execution | **GPT-6 Luna · High** for multi-tool scouting; **Low** for simple extraction | **GPT-6 Astra · Medium** initially; raise effort for the specific unresolved problem |
+| Claude Code | **Sonnet 5.5 · High** for planning and acceptance reviews; **Medium** for routine execution | **Haiku 5.5 · Medium** for bounded cut/source proposals and caption findings | **Opus 5.5 · Medium** initially; raise effort for the specific unresolved problem |
+| Grok Build | **Grok 4.7 · High** for lead decisions/review; **Medium** for bounded execution | An available suitable model at **Medium**; **Low** only for simple checks | **High**, then **xhigh** for a specific unresolved hard task; no `max` setting |
+
+High effort helps reconcile the story, reference style, factual risks, and task dependencies. Once that plan exists, dispatching workers and applying reviewed instructions are routine. If the host cannot switch coordinator effort cleanly, leave it High; the user does not need to babysit phase changes. Set each worker's model **and** effort explicitly, verify the resolved settings, and record any fallback. A small model may need high effort for reliable multi-tool work. Effort scales and subscription usage differ across providers.
+
+Use **one coordinator and at most two active preparation workers** initially. Reuse the worker slots between stages. The coordinator can also own the timeline; one writer means one responsibility, not an extra permanent agent.
+
+| Responsibility | Assignment and boundary |
+|---|---|
+| Propose retake cuts, repetitions, source leads, or caption defects | Small worker; one scene/claim packet; returns candidates and uncertainty; does not make final deletions |
+| Decide narrative cuts and accept factual proof | Capable coordinator at High effort; inspect context and actual evidence |
+| Fill an approved visual template | Bounded worker; capable reviewer accepts the preview; new layout/animation code goes to a capable model |
+| Apply cuts or place visuals | One timeline owner using the checked Borumi scripts, live state and readback |
+| Timing, hashes, subtitle mapping, rendering and technical checks | Local scripts; no separate model needed for the computation |
+| Final editorial/audio/visual review | Capable model at High effort with actual playback tools; escalate unresolved hard decisions |
+
+These recommendations were checked **2026-10-16** and are starting points, not a cross-model quality benchmark. Model labels in the skill do not configure the harness automatically. [Official sources, effort details and runtime configuration](skills/video-edit-pipeline/references/model-routing.md).
 
 ## Install and use
 
@@ -42,22 +65,41 @@ python3 skills/video-edit-pipeline/scripts/run.py doctor
 
 The skill is linked into `~/.agents/skills/video-edit-pipeline`, a shared location supported by Codex and Grok Build. Keep the checkout and refresh/restart skill discovery. The fetch step gets pinned public dependencies into an isolated directory; it preserves existing installations and video projects.
 
-In **Codex**:
-
-```text
-$video-edit-pipeline Edit my Borumi video "Project Name". Tighten the intro,
-use real screenshots and tweets for the claims, and make three reel candidates.
-Keep the established quality, minimize repeated work, and resume from saved work.
-```
-
-In **Grok Build**:
-
-```text
-/video-edit-pipeline Edit "Project Name" in Borumi. Start with only the intro.
-Keep my visual style. Use two workers at most and save a handoff for Codex.
-```
-
 For **Claude Code**, run `setup.py install --harness claude`, then use `/video-edit-pipeline`. Other local harnesses can read [SKILL.md](skills/video-edit-pipeline/SKILL.md) and use the same scripts. A browser chat without access to the Mac can prepare research/plans but cannot directly edit local Borumi. [Harness setup and compatibility](skills/video-edit-pipeline/references/harnesses.md).
+
+## Raw-to-finished starter prompt
+
+Select the coordinator model/effort above. In Codex, paste the following and substitute your actual project names. In Claude Code or Grok Build, change the first line to **`/video-edit-pipeline`**. Use the same outcome and quality checks across harnesses.
+
+```text
+$video-edit-pipeline
+
+Use “Tutorial raw” as the Borumi source and the current finished “Tutorial”
+as the style and quality reference. Locate and verify both. Create a separate
+working copy; preserve the originals and existing working skills.
+
+Start with a representative 30–60-second section in a scene-scoped pilot job.
+Match the reference's pacing, real proof visuals, camera layout, captions and
+audio quality. After that treatment passes review, continue the full video
+from a fresh working-copy snapshot and reuse the accepted pilot assets.
+
+Use High coordinator effort for planning, cut decisions and final review;
+Medium for routine execution when supported. Use at most two preparation
+workers with the skill's model-specific effort settings. Verify each worker's
+actual model and effort, and report unsupported settings or fallbacks.
+
+Prepare cut candidates and source leads in parallel. Review and apply cuts,
+then refresh timings before producing visuals for the retained claims.
+Keep one timeline writer. Reuse research, real screenshots/tweets, templates
+and timed transcripts. Use local code for timing, captions and rendering.
+
+Save checkpoints. Deliver the reviewed master, corrected captions, chapters,
+source ledger and review evidence. Use existing authorized tools/capacity;
+do not add paid API or generation jobs without an agreed budget.
+Flag unsupported claims. Do not upload or publish the video.
+```
+
+The runner scopes by scene, so the coordinator must select a real scene ID for the pilot; an unscoped job prepares the whole video. [Exact pilot commands, preparation-only mode, reels, and cross-harness resume prompts](skills/video-edit-pipeline/references/scenarios.md).
 
 ## How this saves time and usage
 
