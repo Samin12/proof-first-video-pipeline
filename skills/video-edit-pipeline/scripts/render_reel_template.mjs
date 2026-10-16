@@ -200,7 +200,7 @@ export async function main(argv = process.argv.slice(2)) {
   const browserExecutable = browser(dep.dir, opt.browser);
   const {bundle} = dep.require('@remotion/bundler');
   const {selectComposition, renderMedia, renderStill} = dep.require('@remotion/renderer');
-  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'video-edit-fast-reel-'));
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'video-edit-pipeline-reel-'));
   const scale = quality === 'preview' ? 0.5 : 1;
   const started = Date.now();
   try {

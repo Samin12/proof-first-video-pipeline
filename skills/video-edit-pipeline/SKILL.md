@@ -1,11 +1,11 @@
 ---
-name: video-edit-fast
-description: Edit Borumi videos, research and place real proof visuals or tweets, and make reels using reusable assets and resumable jobs. Use for a quick cut, proof-first edit, reel, or continuation in Codex, Grok Build, Claude, or another local tool-capable harness.
+name: video-edit-pipeline
+description: Run a staged Borumi video edit with an explicit cut-before-visuals pipeline, model roles, reusable proof assets and resumable jobs. Use when the user requests video-edit-pipeline or this staged workflow in Codex, Claude Code, Grok Build or another local harness. This separate skill preserves existing working editing skills.
 ---
 
-# Video Edit Fast
+# Video Edit Pipeline
 
-Finish the requested edit at the established quality with the smallest useful context and existing tools. Optimize subscription usage and elapsed time before chasing lower token prices. Preserve the creator's meaning and established style. This is a portable companion to `proof-first-video-editor`; its tested Borumi writers remain the editing engine. No proprietary Workflow API is required.
+Finish the requested edit at the established quality with the smallest useful context and existing tools. Optimize subscription usage and elapsed time before chasing lower token prices. Preserve the creator's meaning and established style. This is a separate fork of `video-edit-fast`, using the pinned `proof-first-video-editor` writers. Preserve both existing skills and their installations. No proprietary Workflow API is required.
 
 ## Start with the actual job
 
@@ -20,6 +20,8 @@ Choose the smallest scope that fulfills the request:
 
 On first use, read [setup and harnesses](references/harnesses.md). Run `python3 <skill>/scripts/run.py doctor`. Use [Borumi operations](references/borumi.md) for actual editor access and writes; use [the job protocol](references/jobs.md) for the helper commands.
 
+For a full edit, follow [the visual pipeline](references/pipeline.md): cut candidates and source discovery → capable editorial cut review → one checked cut write → post-cut timings → retained proof and finishing → visuals → final export review → optional reels. Read [model roles](references/model-routing.md) when assigning workers and [starter scenarios](references/scenarios.md) when beginning from raw footage and a finished style reference. Timed visuals and final captions use the committed post-cut timeline, never the original timings.
+
 ## Plan once; send small packets
 
 For preparation without execution, use `--plan-only`; retain unresolved findings in a prepared receipt. Create a local job folder outside the skill/repository. Save the outcome, allowed spend, model/billing route, timeline hash, scene index, and artifact paths there. Use `run.py init`, `ingest`, and `next`. Raw transcripts, media, receipts, and account details stay local.
@@ -27,6 +29,8 @@ For preparation without execution, use `--plan-only`; retain unresolved findings
 Give a worker only its scene packet, exact question, source IDs, output schema, and relevant reference. Share files and hashes, not conversation histories. Run deterministic extraction, timing arithmetic, deduplication, subtitle mapping, rendering, and checks in scripts.
 
 For independent research or planning, use up to two workers initially; tune to the account's measured capacity. No nested fan-out by default. One coordinator integrates their results; **one writer owns the Borumi timeline**. Use the harness's native subagents when available and authorized, or run the same tasks sequentially. Never claim that parallelism reduces total token use. Separate concurrency from model choice; skill frontmatter does not enforce either.
+
+Choose effort per role using [model routing](references/model-routing.md): high for capable planning/decision gates, medium for routine execution, model-specific settings for small workers. Set and record each worker's actual model and effort explicitly. Fan-out alone does not justify maximum effort or automatic inheritance of the coordinator's settings.
 
 Keep a capable model for editorial decisions and final review. Eliminate redundant context, calls, and renders first. Use a smaller model for extraction, claim classification, caption-name candidates, and source ranking only after it passes the same acceptance checks. Read [quota-efficient scheduling](references/quota-workflow.md) when optimizing a recurring workflow. Escalate ambiguous cuts, conflicting evidence, timing/crop failures, and final editorial judgment. Check [services and billing](references/services.md) before choosing a provider; record the route actually used. A goal tool helps only when supported and requested; the job's `goal.md` works everywhere. Stop repeated failures after two attempts, checkpoint, then change method or report the specific blocker.
 

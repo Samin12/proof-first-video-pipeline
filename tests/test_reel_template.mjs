@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {validatePlan} from '../skills/video-edit-fast/scripts/render_reel_template.mjs';
+import {validatePlan} from '../skills/video-edit-pipeline/scripts/render_reel_template.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const template = path.join(root, 'skills/video-edit-fast/assets/reel-template');
+const template = path.join(root, 'skills/video-edit-pipeline/assets/reel-template');
 const fixture = () => JSON.parse(fs.readFileSync(path.join(template, 'example.json'), 'utf8'));
 
 test('synthetic plan has exact consecutive frame boundaries and a source asset', () => {

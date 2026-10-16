@@ -18,8 +18,8 @@ The most valuable optimization is to stop asking an expensive model to repeatedl
 
 | Surface | Appropriate role | Installation and limits |
 | --- | --- | --- |
-| Local Codex CLI / compatible desktop session | Read local media, call Borumi tools, run helpers, coordinate review | Current docs discover user skills under `~/.agents/skills/`; invoke with `$video-edit-fast` or select using `/skills`. Repo discovery uses `.agents/skills`. |
-| Official Grok Build | The same local workflow, including skills and MCP | Discovers `~/.agents/skills/`, `~/.grok/skills/`, and repo `.grok/skills/`. User-invocable skills appear as `/video-edit-fast`. Check discovery with `grok inspect`. |
+| Local Codex CLI / compatible desktop session | Read local media, call Borumi tools, run helpers, coordinate review | Current docs discover user skills under `~/.agents/skills/`; invoke with `$video-edit-pipeline` or select using `/skills`. Repo discovery uses `.agents/skills`. |
+| Official Grok Build | The same local workflow, including skills and MCP | Discovers `~/.agents/skills/`, `~/.grok/skills/`, and repo `.grok/skills/`. User-invocable skills appear as `/video-edit-pipeline`. Check discovery with `grok inspect`. |
 | Grok in a normal browser chat | Research, script alternatives, feedback on supplied material | A chat upload alone does not establish access to local Borumi. Use the local agent or an explicitly configured connector/tunnel and verify its capabilities. |
 | Other tool-capable harness | Execute the same artifact contracts | Read `SKILL.md`, provide local execution and the needed Borumi/MCP tools, and use that harness's documented discovery/invocation. A Markdown file cannot itself grant tools or permissions. |
 

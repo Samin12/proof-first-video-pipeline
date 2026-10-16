@@ -1,6 +1,6 @@
 # Local job protocol
 
-The stdlib `scripts/run.py` stores state and creates an **advisory task manifest**. It does not call models, spend money, dispatch workers, mutate Borumi, or perform visual review. The current harness executes tasks from the manifest. Read the help for the installed version if a field differs.
+The stdlib `scripts/run.py` stores state and creates an **advisory task manifest**. It does not call models, spend money, dispatch workers, mutate Borumi, or perform visual review. The current harness executes tasks from the manifest. Read the help for the installed version if a field differs. New jobs use the staged version-2 graph; existing version-1 jobs retain their original graph and are never silently migrated.
 
 ## First run and resume
 
@@ -15,7 +15,37 @@ python3 <skill>/scripts/run.py next '<job>'
 
 Use `--plan-only` when asked to prepare or propose without applying: all modes then stop at the assembled plan/handoff. `tasks <job> --plan-only` adds this boundary to an existing job. Only an explicitly authorized `tasks <job> --execute` clears it; the command schedules execution tasks but never performs them.
 
-Modes: `fast` creates planning tasks without mandatory research; `proof` includes research before scene planning; `reel` plans clips and a local render, with no timeline writer. Specify repeated `--scene` flags for a bounded edit. Without a scene restriction, all substantive narration scenes participate. Chapter cards and sub-frame remnants remain in structural/coverage review without automatically spawning their own workers.
+Modes: `fast` prepares cuts without mandatory research or new visual production; `proof` overlaps cut candidates and preliminary source discovery, then gates timed visuals on committed cuts and post-cut timings; `reel` plans clips and a local render, with no timeline writer. Specify repeated `--scene` flags for a bounded edit. Without a scene restriction, all substantive narration scenes participate. Chapter cards and sub-frame remnants remain in structural/coverage review without automatically spawning their own workers.
+
+View the actual graph, including readiness and model tiers:
+
+```bash
+python3 <skill>/scripts/run.py pipeline '<job>' --format mermaid
+python3 <skill>/scripts/run.py pipeline '<job>' --format json
+```
+
+The Mermaid output can be pasted into a Markdown Mermaid fence. The [interactive map](../assets/pipeline/index.html) is a generic explanation; the command above reads the current job. Neither launches workers. Model tiers and tool assignments tell the harness how to dispatch, not which model it actually selected.
+
+## Keep baseline and post-cut timings distinct
+
+Version 2 stores immutable stage captures under `stages/<stage>/<digest>/`. Keep the original baseline for cut planning; do not replace it with a post-cut snapshot simply to refresh visual timing.
+
+1. Ingest the source snapshot and timed words with the default `--stage baseline`.
+2. Complete the reviewed cut and its checked writer task. The writer receipt must include `timeline_hash_after` and an `evidence.readback` artifact with a matching `timeline_hash` (or the upstream snapshot's `hash`). The artifact must be included in `artifacts` and is hash-bound like all other evidence.
+3. Export the real committed project's fresh snapshot and transcript. Ingest them with `--stage postcut`:
+
+```bash
+python3 <skill>/scripts/run.py ingest '<job>' --stage postcut \
+  --snapshot '<postcut snapshot.json>' --transcript '<postcut timed transcript directory>'
+```
+
+The post-cut hash must match the recorded writer readback. This refreshes downstream timings without invalidating the completed baseline cut. Post-cut inputs are not a substitute for the next writer's live conflict check. If the project changed independently, inspect it and reopen/replan the affected work; do not relabel a changed snapshot to force a match.
+
+After this ingest, reread `tasks.json` or `next`: the `postcut-timings` task's input digest now includes the imported capture. Build its completion receipt with that current digest and set `evidence.postcut_index` to the immutable index path returned for the stage. Include that index in `artifacts`.
+
+New cuts invalidate dependent proof placement, final captions/audio mapping, previews and exports. Old research artifacts and receipts remain available for deliberate reuse; the coordinator still checks whether they support the retained claims. Replacing the baseline after a committed cut is rejected until the affected work is explicitly reopened.
+
+## Dispatch and resume
 
 Inputs may be the original `snapshot.py` JSON or a `dump_transcript.py` work directory. Timed words must be in **project milliseconds**. The runner rejects raw SQLite input and unsupported time formats. The upstream snapshot CLI's global `--work` and `--project-id` options must precede `save`; see [Borumi](borumi.md).
 
@@ -45,7 +75,7 @@ Task result content should state decisions, exact ranges or claims, artifact pat
 
 ```json
 {
-  "task_id": "plan-s0001",
+  "task_id": "cut-candidates-s0001",
   "input_digest": "copy the complete digest from the current manifest",
   "status": "done",
   "summary": "Prepared the requested scene edit; no timeline change yet.",

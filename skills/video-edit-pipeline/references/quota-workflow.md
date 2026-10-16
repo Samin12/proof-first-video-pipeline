@@ -2,6 +2,8 @@
 
 The production metric is **accepted editing work per unit of subscription usage and elapsed time**, including corrections. A cheap draft that needs a full rewrite is not a saving. Do not replace the creator's successful visual/editorial standard with a cheaper-looking result.
 
+Use [the stage map](pipeline.md) to choose the order of work and [model routing](model-routing.md) to assign responsibilities. Lock cuts and refresh their timing before final visual production; preliminary source discovery may overlap candidate-cut preparation.
+
 ## A practical session
 
 1. **Prepare locally.** Read the existing snapshot, timed transcript, source ledger, and receipts. Refresh live state once at the start of an editing batch. Generate a compact scene index and only the packets needed for this request. Use code for arithmetic, media probing, file search, deduplication, and frame/subtitle mapping.

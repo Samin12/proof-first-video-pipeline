@@ -9,10 +9,11 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUN = ROOT / "skills/video-edit-fast/scripts/run.py"
+RUN = ROOT / "skills/video-edit-pipeline/scripts/run.py"
 
 
 class RunnerTests(unittest.TestCase):
+    legacy_graph = True
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.base = Path(self.temp.name)
@@ -41,9 +42,11 @@ class RunnerTests(unittest.TestCase):
         return json.loads((self.job / name).read_text())
 
     def cli(self, *args, code=0):
+        if getattr(self, "legacy_graph", False) and args and args[0] == "init" and "--graph-version" not in args:
+            args = (*args, "--graph-version", "1")
         env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
         # Isolate tests from a developer's real toolchain installation/config.
-        env["VIDEO_EDIT_FAST_CONFIG"] = str(self.base / "toolchain.json")
+        env["VIDEO_EDIT_PIPELINE_CONFIG"] = str(self.base / "toolchain.json")
         for key in ("BORUMI_EDIT_SKILL", "PROOF_FIRST_SKILL", "BORUMI_ANIMATION_KIT"):
             env.pop(key, None)
         p = subprocess.run([sys.executable, str(RUN), *map(str, args)],
@@ -430,6 +433,213 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(result["dependencies"]["edit_skill"]["present"])
         self.assertTrue(result["dependencies"]["proof_skill"]["present"])
         self.assertFalse(result["live_bridge_checked"])
+
+
+class PipelineTests(unittest.TestCase):
+    setUp = RunnerTests.setUp
+    tearDown = RunnerTests.tearDown
+    put = RunnerTests.put
+    get = RunnerTests.get
+    cli = RunnerTests.cli
+
+    def start_v2(self, mode="proof", plan_only=False):
+        args = ["init", self.job, "--goal", "Improve the edit without changing meaning", "--mode", mode]
+        if plan_only:
+            args.append("--plan-only")
+        self.cli(*args)
+        return self.cli("ingest", self.job, "--snapshot", self.snapshot, "--transcript", self.words)
+
+    def make_receipt(self, tid, status="done", after_hash=None):
+        task = next(t for t in self.get("tasks.json")["tasks"] if t["id"] == tid)
+        suffix = ".r" + str(len(self.get("checkpoint.json").get("reopen_events", [])))
+        artifact = "outputs/" + tid + suffix + ".json"
+        self.put(self.job / artifact, {"synthetic": True, "task": tid})
+        receipt = {"task_id": tid, "input_digest": task["input_digest"], "status": status,
+                   "summary": "Synthetic test evidence, not actual video QA", "artifacts": [artifact],
+                   "unresolved": ["Requires source pixel review"] if status == "prepared" else [], "evidence": {}}
+        for key in task["evidence_required"]:
+            if key == "postcut_index":
+                path = self.get("checkpoint.json")["stage_inputs"]["postcut"]["index"]
+            else:
+                path = "outputs/" + tid + suffix + "." + key + ".json"
+                value = {"synthetic": True, "check": key}
+                if key == "readback":
+                    receipt["timeline_hash_after"] = after_hash or ("cut-committed-2" if tid == "write-cut" else "finish-committed-3")
+                    value = {"timeline_hash": receipt["timeline_hash_after"]}
+                self.put(self.job / path, value)
+            receipt["evidence"][key] = path
+            receipt["artifacts"].append(path)
+        return self.put(self.base / (tid + suffix + "-receipt.json"), receipt)
+
+    def finish_v2(self, tid, status="done", after_hash=None):
+        return self.cli("complete", self.job, "--task", tid, "--receipt", self.make_receipt(tid, status, after_hash))
+
+    def finish_cut(self, after_hash="cut-committed-2"):
+        for task in self.get("tasks.json")["tasks"]:
+            if task["id"] not in self.get("checkpoint.json")["completed"]:
+                self.finish_v2(task["id"], after_hash=after_hash if task["id"] == "write-cut" else None)
+            if task["id"] == "write-cut":
+                break
+
+    def postcut_files(self, timeline_hash="cut-committed-2"):
+        snapshot = json.loads(json.dumps(self.data))
+        snapshot.update(duration=18000, hash=timeline_hash)
+        snapshot["scenes"] = [["a1", "Intro", 0, 9000], ["b2", "Demo", 9000, 18000]]
+        snapshot["layouts"]["l1"][1] = 18000
+        snapshot["content"]["c1"] = ["camera_1", 0, 9000, "media-1", 0, 9000, "g1"]
+        snapshot["content"]["c2"] = ["camera_1", 9000, 18000, "media-2", 0, 9000, "g2"]
+        snap = self.put(self.base / "postcut.json", snapshot)
+        words = self.put(self.base / "postcut-words.json", {"timeline_hash": timeline_hash,
+            "words": [[100, 400, "Hello"], [500, 900, "world"], [10000, 10500, "Demonstration"]]})
+        return snap, words
+
+    def ingest_postcut(self, timeline_hash="cut-committed-2"):
+        snap, words = self.postcut_files(timeline_hash)
+        return self.cli("ingest", self.job, "--stage", "postcut", "--snapshot", snap, "--transcript", words)
+
+    def test_default_v2_graph_roles_parallel_discovery_and_real_export_review(self):
+        self.start_v2()
+        manifest = self.get("tasks.json")
+        tasks = {t["id"]: t for t in manifest["tasks"]}
+        self.assertEqual(self.get("job.json")["graph_version"], 2)
+        self.assertEqual(manifest["timeline_writers"], 1)
+        self.assertEqual(manifest["writer_tasks"], 2)
+        self.assertEqual([t["id"] for t in self.cli("next", self.job)["ready"]],
+                         ["cut-candidates-s0001", "discover-proof-s0001"])
+        self.assertEqual(tasks["cut-candidates-s0001"]["model_tier"], "small")
+        self.assertEqual(tasks["assemble-cut"]["model_tier"], "capable")
+        self.assertEqual(len(tasks["assemble-cut"]["depends_on"]), 4)
+        self.assertEqual(tasks["finalize-proof"]["model_tier"], "capable")
+        self.assertEqual(tasks["render-visuals"]["model_tier"], "local")
+        self.assertEqual(tasks["write-cut"]["owner_tier"], "capable")
+        self.assertEqual(tasks["verify-final"]["depends_on"], ["export-master"])
+        self.assertEqual(tasks["prepare-finishing"]["depends_on"], ["postcut-timings"])
+        self.assertEqual(tasks["retained-claims"]["depends_on"], ["postcut-timings"])
+        for task in tasks.values():
+            for field in ("responsibility", "model_tier", "tools", "inputs", "deliverable", "gate"):
+                self.assertTrue(task[field])
+        self.assertTrue(self.cli("verify", self.job)["structural_ok"])
+
+    def test_staged_ingest_preserves_cut_and_runs_through_actual_file_review(self):
+        self.start_v2()
+        self.finish_cut()
+        before = self.get("checkpoint.json")["completed"]
+        baseline = self.get("scene-index.json")
+        snap, words = self.postcut_files()
+        self.cli("ingest", self.job, "--snapshot", snap, "--transcript", words, code=2)
+        self.assertEqual(self.get("scene-index.json"), baseline)
+        self.cli("ingest", self.job, "--stage", "postcut", "--snapshot", snap, "--transcript", words)
+        self.assertEqual(self.get("checkpoint.json")["completed"], before)
+        self.assertEqual(self.get("scene-index.json"), baseline)
+        self.finish_v2("postcut-timings")
+        self.assertEqual([t["id"] for t in self.cli("next", self.job)["ready"]], ["prepare-finishing", "retained-claims"])
+        for task in self.get("tasks.json")["tasks"]:
+            if task["id"] not in self.get("checkpoint.json")["completed"]:
+                self.finish_v2(task["id"])
+        self.assertEqual(self.cli("next", self.job)["remaining"], 0)
+        result = self.cli("verify", self.job)
+        self.assertTrue(result["structural_ok"])
+        self.assertFalse(result["deliverable_verified"])
+
+    def test_postcut_requires_writer_and_rejects_stale_snapshot_or_words(self):
+        self.start_v2()
+        snap, words = self.postcut_files()
+        self.cli("ingest", self.job, "--stage", "postcut", "--snapshot", snap, "--transcript", words, code=2)
+        self.finish_cut()
+        wrong_snap, wrong_words = self.postcut_files("wrong-hash")
+        result = self.cli("ingest", self.job, "--stage", "postcut", "--snapshot", wrong_snap, "--transcript", wrong_words, code=2)
+        self.assertIn("hash mismatch", result["error"])
+        snap, words = self.postcut_files()
+        value = json.loads(words.read_text())
+        value["timeline_hash"] = "bridge-baseline-1"
+        self.put(words, value)
+        self.cli("ingest", self.job, "--stage", "postcut", "--snapshot", snap, "--transcript", words, code=2)
+        self.assertNotIn("postcut", self.get("checkpoint.json")["stage_inputs"])
+
+    def test_writer_readback_hash_is_checked_and_bound_to_receipt(self):
+        self.start_v2("fast")
+        for task in self.get("tasks.json")["tasks"]:
+            if task["id"] == "write-cut":
+                break
+            self.finish_v2(task["id"])
+        path = self.make_receipt("write-cut")
+        receipt = json.loads(path.read_text())
+        receipt["timeline_hash_after"] = "does-not-match"
+        self.put(path, receipt)
+        self.cli("complete", self.job, "--task", "write-cut", "--receipt", path, code=2)
+        self.finish_v2("write-cut")
+        record = self.get("checkpoint.json")["completed"]["write-cut"]
+        committed = json.loads((self.job / record["receipt"]).read_text())
+        self.put(self.job / committed["evidence"]["readback"], {"timeline_hash": "tampered"})
+        snap, words = self.postcut_files()
+        self.cli("ingest", self.job, "--stage", "postcut", "--snapshot", snap, "--transcript", words, code=2)
+
+    def test_reopen_cut_clears_active_postcut_and_revised_cut_can_be_ingested(self):
+        self.start_v2("fast")
+        self.finish_cut()
+        self.ingest_postcut()
+        self.finish_v2("postcut-timings")
+        old_info = self.get("checkpoint.json")["stage_inputs"]["postcut"]
+        self.cli("reopen", self.job, "--task", "write-cut", "--reason", "Revise one cut")
+        self.assertNotIn("postcut", self.get("checkpoint.json")["stage_inputs"])
+        self.assertTrue((self.job / old_info["index"]).exists())
+        self.finish_v2("write-cut", after_hash="revised-cut-4")
+        self.ingest_postcut("revised-cut-4")
+        self.finish_v2("postcut-timings")
+        self.assertTrue(self.cli("verify", self.job)["structural_ok"])
+
+    def test_postcut_transcript_refresh_invalidates_timing_not_cut(self):
+        self.start_v2()
+        self.finish_cut()
+        self.ingest_postcut()
+        self.finish_v2("postcut-timings")
+        self.finish_v2("retained-claims")
+        cut_record = self.get("checkpoint.json")["completed"]["write-cut"]
+        words = self.base / "postcut-words.json"
+        value = json.loads(words.read_text())
+        value["words"][0][2] = "Corrected"
+        self.put(words, value)
+        self.cli("ingest", self.job, "--stage", "postcut", "--snapshot", self.base / "postcut.json", "--transcript", words)
+        completed = self.get("checkpoint.json")["completed"]
+        self.assertEqual(completed["write-cut"], cut_record)
+        self.assertNotIn("postcut-timings", completed)
+        self.assertNotIn("retained-claims", completed)
+
+    def test_v2_plan_only_prepared_all_modes_and_legacy_versionless(self):
+        for mode in ("fast", "proof", "reel"):
+            with self.subTest(mode=mode):
+                self.job = self.base / ("v2-plan-" + mode)
+                self.start_v2(mode, plan_only=True)
+                manifest = self.get("tasks.json")
+                self.assertEqual(manifest["timeline_writers"], 0)
+                final = "assemble-reels" if mode == "reel" else "assemble-cut"
+                self.assertEqual(manifest["tasks"][-1]["id"], final)
+                for task in manifest["tasks"]:
+                    self.finish_v2(task["id"], status="prepared" if task["id"] == final else "done")
+                self.assertTrue(self.cli("next", self.job)["planning_complete"])
+                self.cli("tasks", self.job, "--execute")
+                self.assertNotIn(final, self.get("checkpoint.json")["completed"])
+        self.job = self.base / "legacy"
+        self.cli("init", self.job, "--goal", "Old job", "--graph-version", "1")
+        config = self.get("job.json")
+        config.pop("graph_version")
+        self.put(self.job / "job.json", config)
+        self.cli("ingest", self.job, "--snapshot", self.snapshot, "--transcript", self.words)
+        self.assertIn("assemble", [t["id"] for t in self.get("tasks.json")["tasks"]])
+        self.assertNotIn("assemble-cut", [t["id"] for t in self.get("tasks.json")["tasks"]])
+        self.cli("ingest", self.job, "--stage", "postcut", "--snapshot", self.snapshot, "--transcript", self.words, code=2)
+
+    def test_pipeline_json_and_raw_mermaid_show_real_dependencies(self):
+        self.start_v2()
+        result = self.cli("pipeline", self.job, "--format", "json")
+        self.assertEqual(result["graph_version"], 2)
+        self.assertEqual(result["tasks"][0]["status"], "ready")
+        p = subprocess.run([sys.executable, str(RUN), "pipeline", str(self.job), "--format", "mermaid"],
+                           capture_output=True, text=True, timeout=20)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertTrue(p.stdout.startswith("flowchart TD\n"))
+        self.assertIn("cut-candidates-s0001 | small | ready", p.stdout)
+        self.assertIn(" --> ", p.stdout)
 
 
 if __name__ == "__main__":

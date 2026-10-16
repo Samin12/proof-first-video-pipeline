@@ -1,4 +1,0 @@
-interface:
-  display_name: "Video Edit Fast"
-  short_description: "Fast Borumi edits, real proof visuals, and reels"
-  default_prompt: "Use $video-edit-fast to edit my Borumi video with existing plan capacity, reusable proof assets, and a resumable job."

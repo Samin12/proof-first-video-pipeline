@@ -28,7 +28,7 @@ def install(harness, home):
     # Both Codex and Grok document shared Agent Skills discovery here.
     targets = {"shared": ".agents/skills", "codex": ".agents/skills",
                "grok": ".grok/skills", "claude": ".claude/skills"}
-    dest = home / targets[harness] / "video-edit-fast"
+    dest = home / targets[harness] / "video-edit-pipeline"
     if dest.is_symlink() and dest.resolve() == SKILL:
         return {"installed": str(dest), "status": "already linked"}
     if dest.exists() or dest.is_symlink():
@@ -54,9 +54,9 @@ def patch_bridge(edit_skill):
 
 
 def fetch(home):
-    base = home / ".video-edit-fast"
+    base = home / ".video-edit-pipeline"
     base.mkdir(parents=True, exist_ok=True)
-    result = {"schema_version": 1, "bridge_port": 47812, "pins": {}}
+    result = {"schema_version": 1, "bridge_port": 47813, "pins": {}}
     for name, (url, commit, subdir) in PINS.items():
         dest = base / "vendor" / name
         if not dest.exists():
@@ -73,7 +73,7 @@ def fetch(home):
         result[name] = str(skill)
         result["pins"][name] = commit
     result["animation_kit"] = str(home / ".borumi-agent/animation-kit")
-    result["bridge_policy"] = "decline MCP elicitation; isolated port 47812"
+    result["bridge_policy"] = "decline MCP elicitation; isolated port 47813"
     config = base / "toolchain.json"
     temp = config.with_suffix(".tmp")
     temp.write_text(json.dumps(result, indent=2) + "\n")
@@ -82,7 +82,7 @@ def fetch(home):
 
 
 def load(home):
-    file = home / ".video-edit-fast/toolchain.json"
+    file = home / ".video-edit-pipeline/toolchain.json"
     if not file.is_file():
         raise ValueError(f"Toolchain missing. Run setup.py --home '{home}' fetch first.")
     return json.loads(file.read_text())

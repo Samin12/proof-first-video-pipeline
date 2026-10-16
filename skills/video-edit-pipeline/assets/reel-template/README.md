@@ -7,8 +7,8 @@ This is working Remotion source for a portrait camera reel with source cards, ye
 From the repository root:
 
 ```bash
-node skills/video-edit-fast/scripts/render_reel_template.mjs \
-  --plan skills/video-edit-fast/assets/reel-template/example.json \
+node skills/video-edit-pipeline/scripts/render_reel_template.mjs \
+  --plan skills/video-edit-pipeline/assets/reel-template/example.json \
   --output /tmp/reel-preview.mp4 --still /tmp/reel-preview.png --at 1 \
   --deps "$HOME/.borumi-agent/animation-kit" --quality preview
 ```
@@ -18,7 +18,7 @@ The example is four seconds of explicitly synthetic content. It contains no crea
 Use `--quality final` for 1080×1920; preview is 540×960. Both preserve the plan's 30 or 60 fps. To check one frame before rendering motion:
 
 ```bash
-node skills/video-edit-fast/scripts/render_reel_template.mjs \
+node skills/video-edit-pipeline/scripts/render_reel_template.mjs \
   --plan /path/to/plan.json --still /tmp/reel-frame.png --at 1 --still-only
 ```
 
@@ -31,7 +31,7 @@ Node.js 18+, ffprobe, and matching versions of `remotion`, `@remotion/bundler`, 
 For a new installation:
 
 ```bash
-npm install --prefix skills/video-edit-fast/assets/reel-template
+npm install --prefix skills/video-edit-pipeline/assets/reel-template
 ```
 
 Rendering requires an existing headless browser. A cached Remotion browser in the dependency installation is discovered automatically; otherwise provide `--browser /path/to/chrome-headless-shell`. Browser setup and package installation are separate, one-time steps. The renderer does not automatically download or install anything. Use Remotion under its applicable license.

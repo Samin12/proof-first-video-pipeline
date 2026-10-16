@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="light dark">
+  <title>Video Edit Pipeline — a reference map</title>
+  <style>
+    :root { color-scheme: light; --bg:#f5f5f1; --surface:#fff; --soft:#eeefeb; --ink:#202622; --muted:#647067; --line:#dce0d9; --blue:#2864c9; --blue-soft:#edf3ff; --purple:#7651ad; --purple-soft:#f4effc; --teal:#177b68; --teal-soft:#e9f6f1; --amber:#936006; --amber-soft:#fff7e3; --shadow:0 12px 40px #1a302a09; }
+    :root[data-theme="dark"] { color-scheme:dark; --bg:#121714; --surface:#1b221e; --soft:#232c26; --ink:#eef3ed; --muted:#a8b6ab; --line:#354239; --blue:#8eb8ff; --blue-soft:#202f45; --purple:#c6a5f7; --purple-soft:#30263d; --teal:#7cd6bb; --teal-soft:#203c33; --amber:#efc36e; --amber-soft:#382f1d; --shadow:0 12px 40px #0002; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:15px; line-height:1.5; }
+    button, select { font:inherit; }
+    button { color:inherit; cursor:pointer; }
+    button:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible { outline:3px solid var(--blue); outline-offset:4px; }
+    button { -webkit-tap-highlight-color:transparent; }
+    a { color:var(--blue); }
+    .skip { position:fixed; left:16px; top:-70px; z-index:10; padding:12px 18px; border-radius:8px; background:var(--surface); }
+    .skip:focus { top:16px; }
+    .shell { width:min(1440px,100%); margin:auto; padding:30px 48px 40px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:750; letter-spacing:-.3px; }
+    .brand-mark { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; color:var(--surface); background:var(--ink); }
+    .top-actions { display:flex; align-items:center; gap:12px; }
+    .reference { color:var(--muted); font-size:10px; font-weight:800; letter-spacing:1.4px; border:1px solid var(--line); border-radius:30px; padding:7px 11px; white-space:nowrap; }
+    .theme { width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--surface); display:grid; place-items:center; }
+    .hero { display:grid; grid-template-columns:minmax(0,1fr) 310px; align-items:end; gap:40px; padding:46px 0 30px; }
+    .eyebrow { color:var(--teal); text-transform:uppercase; font-size:11px; font-weight:800; letter-spacing:1.8px; margin:0 0 12px; }
+    h1 { font-size:clamp(30px,3.4vw,47px); line-height:1.1; font-weight:740; letter-spacing:-1.8px; margin:0; max-width:820px; }
+    .intro { color:var(--muted); max-width:730px; font-size:16px; margin:18px 0 0; line-height:1.65; }
+    .principles { border-left:1px solid var(--line); padding-left:25px; display:grid; gap:13px; }
+    .principle { display:flex; gap:11px; align-items:start; font-size:13px; }
+    .principle b { display:block; font-weight:750; }
+    .principle small { color:var(--muted); font-size:12px; }
+    .principle .dot { margin-top:6px; width:7px; height:7px; border-radius:50%; background:var(--teal); flex-shrink:0; }
+    .controls { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:25px; align-items:end; padding:25px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .control-label { display:block; margin-bottom:9px; color:var(--muted); font-size:11px; font-weight:750; letter-spacing:1px; text-transform:uppercase; }
+    .modes { display:flex; flex-wrap:wrap; gap:5px; }
+    .mode { border:1px solid transparent; background:transparent; border-radius:9px; padding:10px 16px; font-size:13px; font-weight:650; }
+    .mode:hover { background:var(--soft); }
+    .mode[aria-pressed="true"] { background:var(--ink); color:var(--surface); }
+    .provider { min-width:210px; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:9px; padding:10px 36px 10px 12px; }
+    .models { display:grid; grid-template-columns:1fr 1fr 1.3fr; gap:12px; padding:18px 0 6px; }
+    .model-chip { border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--surface); min-width:0; }
+    .model-chip span { display:block; color:var(--muted); text-transform:uppercase; font-size:9px; font-weight:800; letter-spacing:1px; margin-bottom:3px; }
+    .model-chip strong { font-size:13px; font-weight:650; }
+    .model-note { color:var(--muted); font-size:12px; line-height:1.6; margin:8px 0 25px; }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr) 345px; align-items:start; gap:30px; }
+    .map-head { display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin:4px 0 17px; }
+    .map-head h2 { margin:0; font-size:17px; letter-spacing:-.35px; font-weight:700; }
+    .map-head span { color:var(--muted); font-size:11px; }
+    .flow { position:relative; }
+    .stage-block { position:relative; }
+    .stage { --accent:var(--muted); --tint:var(--soft); position:relative; width:100%; text-align:left; border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:12px; background:var(--surface); padding:18px 20px; box-shadow:0 3px 12px #16231903; transition:border-color .16s,box-shadow .16s,background .16s; }
+    .stage:hover { border-color:var(--accent); box-shadow:var(--shadow); }
+    .stage.is-selected { border-color:var(--accent); box-shadow:0 0 0 2px var(--tint),var(--shadow); background:linear-gradient(110deg,var(--tint),var(--surface) 65%); }
+    .stage[data-tier="cheap"] { --accent:var(--blue); --tint:var(--blue-soft); }
+    .stage[data-tier="capable"] { --accent:var(--purple); --tint:var(--purple-soft); }
+    .stage[data-tier="writer"] { --accent:var(--teal); --tint:var(--teal-soft); }
+    .stage-top { display:flex; gap:14px; align-items:start; }
+    .number { color:var(--accent); font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:11px; font-weight:700; line-height:24px; min-width:23px; }
+    .stage-name { flex:1; min-width:0; }
+    .stage h3 { font-size:16px; line-height:1.35; font-weight:700; letter-spacing:-.25px; margin:0; }
+    .stage p { font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.6; }
+    .tier { background:var(--tint); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 17%,transparent); padding:3px 8px; border-radius:25px; font-size:9px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; white-space:nowrap; }
+    .stage-bottom { display:flex; gap:8px; flex-wrap:wrap; justify-content:space-between; margin:13px 0 0 37px; font-size:10px; color:var(--muted); }
+    .stage-bottom .inspect { color:var(--accent); font-weight:700; white-space:nowrap; }
+    .connector { height:31px; display:flex; align-items:center; justify-content:center; gap:10px; color:var(--muted); font-size:10px; }
+    .connector::before,.connector::after { content:""; width:1px; height:10px; background:var(--line); }
+    .connector svg { width:12px; height:14px; opacity:.7; }
+    .parallel { border:1px dashed var(--line); border-radius:14px; background:color-mix(in srgb,var(--soft) 40%,transparent); padding:14px; }
+    .parallel-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:7px; padding:0 2px 12px; }
+    .parallel-label { color:var(--muted); text-transform:uppercase; letter-spacing:1.1px; font-size:9px; font-weight:800; }
+    .parallel-limit { color:var(--muted); font-size:10px; }
+    .lanes { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .lanes .stage { padding:16px 14px; height:100%; }
+    .lanes .stage-top { gap:9px; flex-wrap:wrap; }
+    .lanes .number { min-width:23px; }
+    .lanes .tier { margin-left:32px; }
+    .lanes .stage h3 { font-size:14px; }
+    .lanes .stage-bottom { margin-left:32px; font-size:9px; }
+    .gate-strip { display:flex; align-items:start; gap:10px; margin:15px 0; background:var(--amber-soft); color:var(--amber); border:1px solid color-mix(in srgb,var(--amber) 18%,transparent); border-radius:9px; padding:11px 13px; font-size:11px; line-height:1.6; }
+    .gate-strip svg { width:16px; height:16px; margin-top:2px; flex-shrink:0; }
+    .branch { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-top:18px; padding:19px; border:1px solid var(--line); border-radius:12px; background:var(--soft); }
+    .branch b { font-size:12px; }
+    .branch p { color:var(--muted); font-size:11px; margin:4px 0 0; }
+    .branch button { background:var(--surface); color:var(--ink); font-size:11px; font-weight:700; padding:9px 12px; border:1px solid var(--line); border-radius:7px; }
+    .inspector { position:sticky; top:22px; border:1px solid var(--line); border-radius:15px; background:var(--surface); box-shadow:var(--shadow); overflow:hidden; }
+    .inspector-header { padding:22px 23px 19px; background:var(--soft); border-bottom:1px solid var(--line); }
+    .inspector-kicker { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:9px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); }
+    .inspector h2 { margin:10px 0 8px; font-size:23px; font-weight:700; line-height:1.2; letter-spacing:-.65px; }
+    .inspector-summary { color:var(--muted); font-size:12px; line-height:1.6; margin:0; }
+    .inspector-body { padding:19px 23px 21px; }
+    .detail { margin-bottom:18px; }
+    .detail:last-child { margin-bottom:0; }
+    .detail h3 { color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-size:9px; font-weight:800; margin:0 0 7px; }
+    .owner { font-size:13px; font-weight:700; margin:0 0 3px; }
+    .model-line { color:var(--muted); font-size:11px; line-height:1.5; margin:0; }
+    .detail ul { padding-left:16px; margin:0; font-size:12px; line-height:1.6; }
+    .detail li + li { margin-top:4px; }
+    .tools { display:flex; flex-wrap:wrap; gap:5px; }
+    .tool { font-size:10px; padding:4px 7px; background:var(--soft); border:1px solid var(--line); border-radius:5px; }
+    .gate { background:var(--amber-soft); border-left:2px solid var(--amber); border-radius:0 7px 7px 0; padding:11px 12px; }
+    .gate h3 { color:var(--amber); }
+    .gate p { font-size:11px; margin:0; line-height:1.6; }
+    .inspector-nav { display:flex; justify-content:space-between; border-top:1px solid var(--line); padding:11px 17px; gap:10px; }
+    .inspector-nav button { padding:5px 6px; border:0; background:none; color:var(--muted); font-size:11px; }
+    .inspector-nav button:disabled { opacity:.35; cursor:default; }
+    .escalation { margin-top:22px; border-top:1px solid var(--line); padding-top:18px; color:var(--muted); font-size:12px; line-height:1.65; }
+    .escalation b { color:var(--ink); font-weight:700; }
+    .footer { display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:22px; margin-top:36px; color:var(--muted); font-size:11px; }
+    .footer nav { display:flex; gap:16px; flex-wrap:wrap; width:100%; }
+    .footer a { color:var(--ink); text-underline-offset:3px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    noscript { display:block; border:1px solid var(--line); background:var(--surface); padding:20px; border-radius:10px; }
+    @media(max-width:1100px) { .shell { padding:25px 28px; } .layout { grid-template-columns:minmax(0,1fr) 310px; gap:20px; } .hero { grid-template-columns:minmax(0,1fr) 250px; gap:25px; } .stage-top { flex-wrap:wrap; } .stage-top>.tier { margin-left:37px; } .stage h3 { font-size:15px; } }
+    @media(max-width:860px) { .shell { padding:22px 22px 32px; } .hero { grid-template-columns:1fr; padding-top:34px; gap:23px; } .principles { border-left:0; padding-left:0; grid-template-columns:repeat(3,1fr); gap:15px; } .layout { display:block; } .inspector { position:static; margin:15px 0 2px; } .inspector-body { display:grid; grid-template-columns:1fr 1fr; gap:0 24px; } .detail.gate { grid-column:1/-1; } .models { grid-template-columns:1fr 1fr 1.2fr; } .stage-top { flex-wrap:nowrap; } .stage-top>.tier { margin-left:0; } .lanes .stage-top { flex-wrap:wrap; } .lanes .stage-top>.tier { margin-left:32px; } .map-head { margin-top:24px; } }
+    @media(max-width:550px) { .shell { padding:18px 16px 28px; } .reference { display:none; } .brand { font-size:14px; } h1 { font-size:34px; letter-spacing:-1.2px; } .intro { font-size:14px; } .principles { grid-template-columns:1fr; gap:10px; } .principle small { display:inline; } .principle b { display:inline; margin-right:6px; } .controls { grid-template-columns:1fr; gap:19px; padding:20px 0; } .provider { width:100%; } .modes { display:grid; grid-template-columns:repeat(3,1fr); } .mode { padding:10px 6px; font-size:12px; } .models { grid-template-columns:1fr; gap:7px; } .model-chip { display:flex; gap:15px; align-items:center; padding:10px 12px; } .model-chip span { min-width:78px; margin:0; font-size:9px; } .model-chip strong { font-size:12px; } .lanes { grid-template-columns:1fr; } .lanes .stage-top { flex-wrap:wrap; } .lanes .stage-top>.tier { margin-left:32px; } .stage { padding:16px 14px; } .stage-top { gap:10px; flex-wrap:wrap; } .stage-top>.tier { margin-left:33px; } .stage-bottom { margin-left:33px; } .stage-name { min-width:160px; } .inspector-body { display:block; padding:18px 20px; } .inspector-header { padding:19px 20px; } .parallel { padding:11px; } .map-head span { display:none; } .gate-strip { font-size:10px; } }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } * { transition:none!important; } }
+    @media print { :root { color-scheme:light; --bg:#fff; --surface:#fff; --soft:#f3f4f2; --ink:#111; --muted:#555; --line:#ccc; } .shell { width:100%; padding:0; } .theme,.inspector,.footer,.controls,.models,.model-note,.branch button { display:none!important; } .layout,.hero { display:block; } .principles { margin:20px 0; } .stage,.parallel,.gate-strip { break-inside:avoid; box-shadow:none; } .stage { color:#111!important; } .connector { height:22px; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#map-heading">Skip to the pipeline</a>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="7" width="5" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="2" width="5" height="5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="13" width="5" height="5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M7 10h3V4.5h3M10 10v5.5h3" stroke="currentColor" stroke-width="1.6"/></svg></span> Video Edit Pipeline</div>
+      <div class="top-actions"><span class="reference">Reference map</span><button id="theme" class="theme" type="button" aria-label="Switch color theme"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 3a7 7 0 0 1 0 14z" fill="currentColor"/></svg></button></div>
+    </header>
+    <section class="hero" aria-labelledby="title">
+      <div><p class="eyebrow">Sequence first. More agents where they help.</p><h1 id="title">A clear route from footage<br>to a reviewed master.</h1><p id="intro" class="intro">Use small workers for bounded proposals, one capable editor for decisions, and local tools for repeatable work. Lock the cut before building expensive visuals.</p></div>
+      <div class="principles" aria-label="Operating limits">
+        <div class="principle"><span class="dot" aria-hidden="true"></span><div><b>Two preparation workers</b><small>The default parallel limit.</small></div></div>
+        <div class="principle"><span class="dot" aria-hidden="true"></span><div><b>One timeline owner</b><small>Every write is serialized.</small></div></div>
+        <div class="principle"><span class="dot" aria-hidden="true"></span><div><b>Reusable local assets</b><small>Paid generation is optional.</small></div></div>
+      </div>
+    </section>
+    <section class="controls" aria-label="Reference map options">
+      <div><span class="control-label" id="mode-label">Choose a workflow</span><div class="modes" role="group" aria-labelledby="mode-label"><button class="mode" data-mode="proof" type="button" aria-pressed="true">Proof-first edit</button><button class="mode" data-mode="quick" type="button" aria-pressed="false">Quick cut</button><button class="mode" data-mode="reel" type="button" aria-pressed="false">Reel branch</button></div></div>
+      <div><label class="control-label" for="provider">Model &amp; effort examples</label><select class="provider" id="provider"><option value="codex">Codex / OpenAI</option><option value="claude">Claude</option><option value="grok">Grok / xAI</option></select></div>
+    </section>
+    <section class="models" aria-label="Example model tiers"><div class="model-chip"><span>Cheap worker</span><strong id="cheap-model"></strong></div><div class="model-chip"><span>Capable editor</span><strong id="capable-model"></strong></div><div class="model-chip"><span>Escalation only</span><strong id="premium-model"></strong></div></section>
+    <p class="model-note" id="provider-note"></p>
+    <main id="main" class="layout">
+      <section class="map" aria-labelledby="map-heading"><div class="map-head"><h2 id="map-heading" tabindex="-1">The proof-first sequence</h2><span>Select a step to inspect its handoff</span></div><noscript>This offline reference map uses JavaScript to switch workflows and show stage details. The proof-first sequence is: inventory → parallel proposals → editorial cut lock → one writer applies cuts → parallel evidence and audio preparation → visual preview accepted by the editor → one writer places assets → export and final artifact review. Quick cuts reuse existing proof and visuals. Reels start from a reviewed master and use local source mapping and composition.</noscript><div id="flow" class="flow"></div><div class="escalation"><b>Escalate a question, not the whole job.</b> Use a premium model when material ambiguity or a demanding review needs it. Give it the relevant scene, evidence, and failed check; retain the completed work.</div></section>
+      <aside id="inspector" class="inspector" aria-labelledby="inspector-title"></aside>
+    </main>
+    <footer class="footer"><span>Reference map · Your harness dispatches agents and runs tools. Model assignment is not automatic.</span><span>Offline · No automatic network requests · Keyboard: Tab, Enter, arrow keys</span><nav aria-label="Project documentation"><a href="https://github.com/Samin12/proof-first-video-pipeline">Public repository</a><a href="https://github.com/Samin12/proof-first-video-pipeline/blob/main/skills/video-edit-pipeline/references/scenarios.md">Scenario kickoff prompts</a><a href="https://github.com/Samin12/proof-first-video-pipeline/blob/main/skills/video-edit-pipeline/references/model-routing.md">Model routing</a></nav></footer>
+    <div id="announcement" class="sr-only" aria-live="polite"></div>
+  </div>
+  <script>
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const down = '<svg viewBox="0 0 12 14" fill="none" aria-hidden="true"><path d="M6 1v10m-4-4 4 4 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const lock = '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 9V6a3.5 3.5 0 0 1 7 0v3M10 12v3" stroke="currentColor" stroke-width="1.5"/></svg>';
+    const providers = {
+      codex:{cheap:'GPT-6 Luna · high scouting / low extraction',capable:'GPT-6.1 Sol · high decisions / medium execution',premium:'GPT-6 Astra · start medium',note:'Start the coordinator at high effort for story and dependency decisions. Use medium for routine work when supported. Set each worker explicitly; fan-out does not require max effort.'},
+      claude:{cheap:'Haiku 5.5 · medium',capable:'Sonnet 5.5 · high decisions / medium execution',premium:'Opus 5.5 · start medium',note:'High effort helps story, evidence and review decisions; medium fits bounded tool work. Workers share plan usage. Verify per-worker model and effort instead of assuming the parent settings fit.'},
+      grok:{cheap:'Available Grok 4.7 · medium / low simple checks',capable:'Grok 4.7 · high decisions / medium execution',premium:'High, then xhigh for a specific hard task',note:'Do not assume a cheaper Grok alias exists. Use an available model with bounded tasks and verified effort support. Grok has no max effort setting; configured model routing does not establish child effort.'}
+    };
+    const tierLabels = {local:'Local tools',cheap:'Cheap worker',capable:'Capable editor',writer:'One writer'};
+    const base = [
+      {id:'inventory',number:'01',tier:'local',title:'Inventory what already exists',blurb:'Read once. Reuse transcripts, media, and prior receipts.',owner:'Local preparation script',inputs:['Selected project and authorized scope','Existing transcript, media, source pack, and receipts'],outputs:['Scene manifest and current project revision','Source paths, timings, and a list of missing work'],tools:['Borumi read bridge','ffprobe','Local files'],gate:'Confirm the exact project, source coverage, and available raw backup before planning writes.',why:'Existing transcripts and finished assets are the cheapest starting point. Send compact scene packets to workers instead of repeatedly loading the whole project.'},
+      {id:'cuts',number:'02A',tier:'cheap',title:'Propose cut candidates',blurb:'Remove retakes and dead air; protect meaning and demos.',owner:'Cut-candidate worker',inputs:['One bounded scene transcript with timings','Cut rules and protected demonstration ranges'],outputs:['Proposed removal ranges and brief reasons','Ambiguous edits for the editor to decide'],tools:['Existing word timings','Local silence analysis'],gate:'Proposals only. No timeline writes, final take choices, or silent changes to the creator’s meaning.',why:'A cheap worker can identify repetition and candidate gaps. It does not need authority to decide the story or mutate the project.'},
+      {id:'sources',number:'02B',tier:'cheap',title:'Find missing sources',blurb:'Reuse the ledger; discover evidence and flag contradictions.',owner:'Missing-source discovery worker',inputs:['Checkable claims from the same scene','Existing evidence ledger and capture inventory'],outputs:['Missing-source shortlist and relevant captures','Critical claim risks for the cut-lock decision'],tools:['Browser / source capture','Existing source ledger','Firecrawl · optional'],gate:'Material contradictions and unsupported critical claims reach the editor before the cut is locked.',why:'Research enough to make a sound editorial choice now. Save extensive proof polishing and full visual production for claims that survive the cut.'},
+      {id:'lock',number:'03',tier:'capable',title:'Lock the editorial cut',blurb:'Choose the narrative, retained claims, and protected moments.',owner:'Lead editor',inputs:['Cut proposals and source-risk findings','User intent, scope, and protected material'],outputs:['Approved cut plan and retained-claim list','Explicit unresolved issues or escalation requests'],tools:['Scene packets','Critical source checks','Cut-plan validation'],gate:'Resolve critical claim risks before advancing. Expensive visuals wait for the approved cut and its new timings.',why:'This is the decision point. Cheap workers propose; a capable editor weighs meaning, proof, pacing, and the cost of revisions. Escalate only the difficult decision.'},
+      {id:'apply',number:'04',tier:'writer',title:'Apply cuts; read new timings',blurb:'One owner stages, checks, commits, and refreshes the map.',owner:'Single timeline owner',inputs:['Approved cut plan','Fresh project revision and rollback receipt'],outputs:['Checked post-cut project state','Fresh scene timings, transcript map, and source-range map'],tools:['Existing Borumi bridge','Verified writer scripts','Rendered frame checks'],gate:'No simultaneous writers. Check revision collisions and the staged edit; read the committed state before downstream work starts.',why:'All later captions and visuals depend on post-cut time. An old transcript timestamp is not a valid placement instruction after the edit changes.'},
+      {id:'verify',number:'05A',tier:'capable',title:'Verify retained proof',blurb:'Check only the claims and captures that remain.',owner:'Evidence verifier',inputs:['Retained-claim list and post-cut timings','Source ledger, URLs, and candidate captures'],outputs:['Verified proof index with source dates','Claim limits, missing proof, and privacy flags'],tools:['Browser / source capture','Source ledger','Firecrawl · optional'],gate:'Each displayed fact has supporting evidence. A real tweet needs a real source capture; generated imagery cannot serve as factual proof.',why:'Independence matters for consequential claims and source mismatches. Reuse verified material while refreshing facts that can change.'},
+      {id:'audio',number:'05B',tier:'cheap',title:'Prepare audio and captions',blurb:'Reuse the recording and remap corrected words to the edit.',owner:'Audio / caption worker',inputs:['Post-cut timing and source-range map','Existing audio, word timings, and name corrections'],outputs:['Audio preparation and sync checks','Corrected, mapped captions with uncertainty flags'],tools:['ffmpeg / ffprobe','Existing transcription','Local timing checks'],gate:'Check sync and edit boundaries. Caption changes must preserve the spoken meaning; uncertain names go to review.',why:'Let local tools do alignment, measurement, and formatting. Re-transcribe only when the existing transcript is missing or unreliable.'},
+      {id:'visuals',number:'06',tier:'cheap',title:'Preview reusable visuals',blurb:'A small worker proposes; the capable editor accepts.',owner:'Visual-template worker; lead editor accepts',inputs:['Verified proof and corrected post-cut timings','Existing styles, captures, and reusable compositions'],outputs:['Still or contact-sheet proposal','Visual specifications accepted by the capable editor'],tools:['Remotion templates','Local captures / diagrams','Higgsfield · optional'],gate:'The capable editor must accept source readability and composition before placement or a full render. Optional paid generation requires an agreed budget and approval; premium review is escalation only.',why:'Use a source card, screen clip, diagram, or chapter template first. The small worker fills the template; the capable editor accepts the result before it reaches the timeline.'},
+      {id:'place',number:'07',tier:'writer',title:'Place visuals; check the result',blurb:'The same timeline owner applies and verifies placements.',owner:'Single timeline owner',inputs:['Checked visual renders and placement plan','Fresh project revision and post-cut map'],outputs:['Checked composed timeline','Placement receipts and inspected boundary frames'],tools:['Existing Borumi bridge','Verified writer scripts','Frame / layer inspection'],gate:'Check layer order, privacy masks, source ranges, and every changed boundary. Never run another writer alongside this one.',why:'A correct asset can still be placed incorrectly. Readback and rendered frames establish that the intended edit is actually on the timeline.'},
+      {id:'review',number:'08',tier:'capable',title:'Export and review the master',blurb:'Check targeted previews, then play back the actual export.',owner:'Final reviewer + serialized export owner',inputs:['Composed timeline and factual/privacy flags','Captions, audio checks, and edit receipts'],outputs:['Reviewed master and export verification','Reusable captions, proof ledger, and source-range map'],tools:['Targeted preview / actual export playback','Borumi export','ffprobe / local QA'],gate:'Check targeted previews and changed boundaries, resolve blockers, then export. Review the actual exported artifact with playback, audio, caption, privacy, and metadata checks before marking it complete. Premium is escalation only.',why:'The final exported artifact must be reviewed. A queued export, timeline preview, or clean metadata probe alone does not establish that the master is ready for derivative reels.'}
+    ];
+    const overrides = {
+      quick:{
+        inventory:{blurb:'Read the selected scenes and reuse their existing assets.'},
+        lock:{blurb:'Accept the cut within the requested scope.',inputs:['Cut proposals and protected material','User intent and existing evidence'],outputs:['Approved cut plan','Meaning or claim risks needing resolution'],gate:'Preserve meaning and protected moments. Resolve critical claim risks before locking; if fresh research or new proof visuals are needed, route that work through proof-first mode.',why:'Quick cut reuses the existing evidence and assets. The capable editor decides the cuts and routes material uncertainty to the proof workflow rather than silently expanding the edit.'},
+        place:{title:'Finish and inspect the cut',blurb:'One owner checks audio, captions, and existing placements.',inputs:['Mapped audio and captions','Fresh post-cut state and existing visual assets'],outputs:['Checked finishing adjustments','Readback and inspected edit-boundary frames'],gate:'Check sync, captions, privacy masks, and every changed boundary. This is finishing only; new proof or visual production goes through the proof workflow. Keep timeline writes serialized.',why:'Reuse the existing layout and proof. Correct the finishing affected by the cut and confirm it in rendered frames.'},
+        review:{blurb:'Check changed sections, then review the actual exported file.'}
+      },
+      reel:{
+        inventory:{title:'Start from a reviewed master',blurb:'Bring its source map, captions, and verified assets.',inputs:['Reviewed master and its source-range map','Original camera/screen media, captions, and proof ledger'],outputs:['Candidate source windows and reusable assets','Portrait requirements and derivative output scope'],tools:['ffprobe','Local master / source files','Existing review receipts'],gate:'A reviewed master is the prerequisite. If it is not ready, complete the master workflow first.',why:'A reel can reuse the story, proof, and timing work already done. The source map lets a portrait composition use original camera and screen footage.'},
+        cuts:{title:'Propose reel moments',blurb:'Find a self-contained hook, payoff, and ending.',inputs:['Bounded transcript sections from the reviewed master','Requested reel topic and length constraints'],outputs:['Candidate source windows and short hook proposals','Context that must stay with each excerpt']},
+        lock:{title:'Lock the reel selection',blurb:'Choose the excerpt, context, hook, and final CTA.',inputs:['Candidate reel moments and protected context','Reviewed master, existing proof, and portrait constraints'],outputs:['Approved reel source ranges and narration order','Retained proof, portrait treatment, and CTA'],gate:'Preserve context and reuse the reviewed master’s evidence. Resolve material claim risks before locking; route newly introduced or changed claims to the proof workflow. Fresh research is not a default reel step.'},
+        apply:{tier:'local',title:'Resolve the reel source map',blurb:'Local tools map the locked excerpt into reel time.',owner:'Local source-mapping script',inputs:['Approved reel ranges','Reviewed master and original source mappings'],outputs:['Exact source-to-reel timing map','Ordered, checked derivative edit plan'],tools:['ffmpeg / ffprobe','Source-range mapping','Local edit plan'],gate:'Validate every source range and the derivative timing before composition. This default branch does not write to Borumi.',why:'Portrait composition often needs the original camera and screen tracks. Cropping the finished side-by-side master is only an approximate fallback.'},
+        audio:{title:'Remap reel audio and captions',blurb:'Align the excerpt and keep captions readable on a phone.',inputs:['Source-to-reel map and corrected master words','Original audio and portrait caption constraints'],outputs:['Checked excerpt audio','Short caption phrases with reel timestamps']},
+        visuals:{title:'Preview the portrait template',blurb:'A small worker proposes; the capable editor accepts.',inputs:['Checked reel source map and reused proof','Caption phrases and reusable portrait template'],outputs:['Portrait frame / motion proposal','Camera crop, source card, captions, and CTA accepted by the capable editor'],tools:['Remotion reel template','ffmpeg / ffprobe'],gate:'The capable editor accepts context, crop, source readability, captions, and CTA before composition. Reuse existing proof; premium is escalation only.'},
+        place:{tier:'local',title:'Assemble and inspect the reel',blurb:'Render the accepted local composition and check its edges.',owner:'Local composition script',inputs:['Portrait preview accepted by the capable editor','Source clips, captions, and proof assets'],outputs:['Reel draft and source mapping receipt','Inspected crop and source-change boundaries'],tools:['Remotion / ffmpeg','Frame and audio checks'],gate:'Check crop, source readability, caption placement, audio, and each source change. The default local composition does not write to Borumi.',why:'Use the accepted template and exact source ranges to build a repeatable local composition. The reel’s final exported artifact still needs playback review.'},
+        review:{title:'Export and review the reel',blurb:'Check a targeted preview, then play the complete export.',owner:'Final reviewer + local export script',inputs:['Composed reel draft and evidence flags','Caption, crop, source-map, and audio checks'],outputs:['Reviewed portrait export','Source-range, caption, and output receipts'],tools:['Complete exported reel playback','Local export','ffprobe / local QA'],gate:'Check a targeted preview and resolve blockers, then export. Play back the complete actual exported reel, including hook and CTA; verify dimensions, duration, captions, privacy, and audio. Final artifact review is required; premium is escalation only.',why:'The reel is a new viewer experience. It needs enough context to stand alone, even when every asset came from a reviewed master.'}
+      }
+    };
+    const modeCopy = {
+      proof:{title:'A clear route from footage<br>to a reviewed master.',intro:'Use small workers for bounded proposals, one capable editor for decisions, and local tools for repeatable work. Lock the cut before building expensive visuals.',heading:'The proof-first sequence'},
+      quick:{title:'A focused cut.<br>A smaller amount of new work.',intro:'Reuse existing evidence and visuals. Propose cuts, lock the edit, apply it with one timeline owner, then finish audio and captions and review the exported master.',heading:'The quick-cut sequence'},
+      reel:{title:'A reel starts<br>from a reviewed master.',intro:'Reuse its research, captions, and source map. Choose a self-contained moment, then compose the original camera and proof assets for a portrait frame.',heading:'The reel branch'}
+    };
+    let mode='proof', provider='codex', selected='inventory';
+    const mobile = window.matchMedia('(max-width:860px)');
+    const dark = window.matchMedia('(prefers-color-scheme:dark)');
+    document.documentElement.dataset.theme = dark.matches ? 'dark' : 'light';
+    const stageOrder = {
+      proof:['inventory','cuts','sources','lock','apply','verify','audio','visuals','place','review'],
+      quick:['inventory','cuts','lock','apply','audio','place','review'],
+      reel:['inventory','cuts','lock','apply','audio','visuals','place','review']
+    };
+    const stages = () => stageOrder[mode].map((id,index) => {
+      const s=base.find(s=>s.id===id);
+      return {...s,...(overrides[mode]?.[id]||{}),number:mode==='proof'?s.number:String(index+1).padStart(2,'0')};
+    });
+    const modelFor = tier => tier==='local' ? 'No model required · deterministic local work' : tier==='writer' ? `Deterministic scripts · ${providers[provider].capable} can supervise` : providers[provider][tier];
+    function stageCard(s) {
+      return `<button class="stage${selected===s.id?' is-selected':''}" type="button" data-stage="${s.id}" data-tier="${s.tier}" aria-pressed="${selected===s.id}" aria-controls="inspector" aria-label="Step ${escape(s.number)}: ${escape(s.title)}"><div class="stage-top"><span class="number">${s.number}</span><div class="stage-name"><h3>${escape(s.title)}</h3><p>${escape(s.blurb)}</p></div><span class="tier">${tierLabels[s.tier]}</span></div><div class="stage-bottom"><span>${escape(s.owner)}</span><span class="inspect">Inspect step ↗</span></div></button>`;
+    }
+    function connector(label='') { return `<div class="connector">${down}${label?`<span>${escape(label)}</span>`:''}</div>`; }
+    function group(items,label) { return `<div class="stage-block"><div class="parallel"><div class="parallel-head"><span class="parallel-label">${escape(label)}</span><span class="parallel-limit">Up to 2 workers</span></div><div class="lanes">${items.map(stageCard).join('')}</div></div></div>`; }
+    function drawMap() {
+      $('main').append($('inspector'));
+      const s=Object.fromEntries(stages().map(x=>[x.id,x]));
+      const single=id=>`<div class="stage-block">${stageCard(s[id])}</div>`;
+      const gate=(title,text)=>`<div class="gate-strip">${lock}<span><b>${escape(title)}</b> ${escape(text)}</span></div>`;
+      let path;
+      if(mode==='proof') {
+        path=single('inventory')+connector('one shared snapshot')+group([s.cuts,s.sources],'02 · Propose in parallel')+connector('proposals + critical claim risks')+single('lock')+gate('Cut lock.','Critical evidence informs this decision. Expensive visual work waits for retained claims and post-cut timings.')+single('apply')+connector('fresh timings')+group([s.verify,s.audio],'05 · Prepare retained material in parallel')+connector('verified assets + corrected timings')+single('visuals')+connector('capable editor accepts the preview')+single('place')+connector('readback + targeted preview')+single('review');
+      } else if(mode==='quick') {
+        path=single('inventory')+connector('one scoped snapshot')+single('cuts')+connector('bounded cut proposals')+single('lock')+gate('Cut lock.','Reuse existing proof and visuals. Resolve material claim risks before advancing; route fresh proof work to the proof-first workflow.')+single('apply')+connector('fresh timings')+single('audio')+connector('mapped audio + captions')+single('place')+connector('readback + targeted preview')+single('review');
+      } else {
+        path=single('inventory')+connector('reviewed master + reusable assets')+single('cuts')+connector('self-contained moment proposals')+single('lock')+gate('Selection lock.','Reuse the reviewed master’s evidence. Route new or changed claims to the proof workflow; no mandatory research step.')+single('apply')+connector('exact source-to-reel map')+single('audio')+connector('mapped captions + reused proof')+single('visuals')+connector('capable editor accepts the preview')+single('place')+connector('local composition + targeted preview')+single('review');
+      }
+      $('flow').innerHTML=path+(mode==='reel'?'<div class="branch"><div><b>Derivative handoff</b><p>Keep the reviewed export, captions, source map, and receipts together.</p></div></div>':'<div class="branch"><div><b>A reviewed master unlocks the reel branch.</b><p>Reuse its evidence, captions, and source map for portrait edits.</p></div><button id="reel-branch" type="button">View reel branch →</button></div>');
+      $('flow').querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('click',()=>selectStage(button.dataset.stage)));
+      $('flow').querySelectorAll('[data-stage]').forEach(button=>button.addEventListener('keydown',event=>{
+        const list=stages(); let index=list.findIndex(s=>s.id===button.dataset.stage);
+        if(['ArrowDown','ArrowRight'].includes(event.key)) index=Math.min(list.length-1,index+1);
+        else if(['ArrowUp','ArrowLeft'].includes(event.key)) index=Math.max(0,index-1);
+        else if(event.key==='Home') index=0; else if(event.key==='End') index=list.length-1; else return;
+        event.preventDefault(); selectStage(list[index].id); $('flow').querySelector(`[data-stage="${list[index].id}"]`).focus();
+      }));
+      $('reel-branch')?.addEventListener('click',()=>{setMode('reel');$('map-heading').focus();});
+      drawInspector();
+    }
+    function list(items) { return `<ul>${items.map(t=>`<li>${escape(t)}</li>`).join('')}</ul>`; }
+    function drawInspector() {
+      const all=stages(), index=all.findIndex(s=>s.id===selected), s=all[index];
+      const model=modelFor(s.tier)+(s.id==='visuals'?` proposes · ${providers[provider].capable} accepts`:'');
+      $('inspector').innerHTML=`<div class="inspector-header"><div class="inspector-kicker"><span>Step ${s.number} · ${tierLabels[s.tier]}</span><span>Handoff details</span></div><h2 id="inspector-title">${escape(s.title)}</h2><p class="inspector-summary">${escape(s.why)}</p></div><div class="inspector-body"><section class="detail"><h3>Owner &amp; model</h3><p class="owner">${escape(s.owner)}</p><p class="model-line">${escape(model)}</p></section><section class="detail"><h3>Tools</h3><div class="tools">${s.tools.map(t=>`<span class="tool">${escape(t)}</span>`).join('')}</div></section><section class="detail"><h3>Needs as input</h3>${list(s.inputs)}</section><section class="detail"><h3>Hands off</h3>${list(s.outputs)}</section><section class="detail gate"><h3>Required before advancing</h3><p>${escape(s.gate)}</p></section></div><div class="inspector-nav"><button id="previous" type="button" ${index===0?'disabled':''}>← Previous step</button><button id="next" type="button" ${index===all.length-1?'disabled':''}>Next step →</button></div>`;
+      const navigate=i=>{selectStage(all[i].id);$('flow').querySelector(`[data-stage="${all[i].id}"]`).focus({preventScroll:true});};
+      $('previous').addEventListener('click',()=>navigate(index-1));
+      $('next').addEventListener('click',()=>navigate(index+1));
+      placeInspector();
+    }
+    function placeInspector() {
+      const card=$('flow').querySelector(`[data-stage="${selected}"]`);
+      if(mobile.matches) card.closest('.stage-block').append($('inspector')); else $('main').append($('inspector'));
+    }
+    function selectStage(id) {
+      selected=id;
+      $('flow').querySelectorAll('[data-stage]').forEach(b=>{const active=b.dataset.stage===id;b.classList.toggle('is-selected',active);b.setAttribute('aria-pressed',String(active));});
+      drawInspector();
+      const s=stages().find(s=>s.id===id);
+      $('announcement').textContent=`Selected step ${s.number}: ${s.title}. ${tierLabels[s.tier]}.`;
+    }
+    function drawModels() {
+      const p=providers[provider]; $('cheap-model').textContent=p.cheap; $('capable-model').textContent=p.capable; $('premium-model').textContent=p.premium; $('provider-note').textContent=p.note;
+    }
+    function setMode(value) {
+      mode=value;selected='inventory';
+      document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+      const copy=modeCopy[mode]; $('title').innerHTML=copy.title; $('intro').textContent=copy.intro; $('map-heading').textContent=copy.heading;
+      drawMap(); $('announcement').textContent=`${copy.heading}. Select a step for details.`;
+    }
+    document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>setMode(button.dataset.mode)));
+    $('provider').addEventListener('change',event=>{provider=event.target.value;drawModels();drawInspector();$('announcement').textContent='Model examples updated. Runtime assignment remains with your harness.';});
+    const themeLabel=()=>{$('theme').setAttribute('aria-label',`Switch to ${document.documentElement.dataset.theme==='dark'?'light':'dark'} theme`);};
+    $('theme').addEventListener('click',()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark';themeLabel();});
+    themeLabel();
+    mobile.addEventListener('change',placeInspector);
+    drawModels(); drawMap();
+  </script>
+</body>
+</html>

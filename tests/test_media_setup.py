@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def module(name):
-    spec = importlib.util.spec_from_file_location(name, ROOT / "skills/video-edit-fast/scripts" / (name + ".py"))
+    spec = importlib.util.spec_from_file_location(name, ROOT / "skills/video-edit-pipeline/scripts" / (name + ".py"))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
@@ -54,7 +54,7 @@ class SetupTests(unittest.TestCase):
             first = setup.install("shared", home)
             self.assertTrue(Path(first["installed"]).is_symlink())
             self.assertEqual(setup.install("shared", home)["status"], "already linked")
-            conflict = home / ".grok/skills/video-edit-fast"
+            conflict = home / ".grok/skills/video-edit-pipeline"
             conflict.mkdir(parents=True)
             (conflict / "keep.txt").write_text("user data")
             with self.assertRaises(ValueError):

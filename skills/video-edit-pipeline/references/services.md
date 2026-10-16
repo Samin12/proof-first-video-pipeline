@@ -27,7 +27,7 @@ For paid APIs, record actual model, input/cached/output/reasoning usage, tool ca
 
 ## Harness checks
 
-The portable user install path is `~/.agents/skills/video-edit-fast/`. Current [Codex docs](https://learn.chatgpt.com/docs/build-skills) support `$video-edit-fast` or selection through `/skills`; [Grok Build docs](https://docs.x.ai/build/features/skills-plugins-marketplaces) support `/video-edit-fast`, native `.grok/skills` paths and the shared user directory. Use `grok inspect` to check discovery. Grok ignores skill-frontmatter `model` and `effort`; enforce routing through supported harness settings.
+The portable user install path is `~/.agents/skills/video-edit-pipeline/`. Current [Codex docs](https://learn.chatgpt.com/docs/build-skills) support `$video-edit-pipeline` or selection through `/skills`; [Grok Build docs](https://docs.x.ai/build/features/skills-plugins-marketplaces) support `/video-edit-pipeline`, native `.grok/skills` paths and the shared user directory. Use `grok inspect` to check discovery. Grok ignores skill-frontmatter `model` and `effort`; enforce routing through supported harness settings.
 
 Normal browser chat does not establish local Borumi access. Verify local execution, Borumi tools, filesystem access, and the active project's identity before promising an applied edit. A remote connector requires its own verified setup.
 

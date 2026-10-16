@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video Edit Pipeline"
+  short_description: "Staged Borumi edits with visual pipeline and model roles"
+  default_prompt: "Use $video-edit-pipeline to edit a separate copy of my raw Borumi video, lock cuts before timed visuals, and preserve my established quality."
