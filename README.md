@@ -6,7 +6,7 @@ This is a new fork of [video-edit-fast](https://github.com/Samin12/proof-first-v
 
 ## See the pipeline
 
-[Open the interactive pipeline](https://samin12.github.io/proof-first-video-pipeline/) · [Stage-by-stage guide](skills/video-edit-pipeline/references/pipeline.md) · [Model responsibilities](skills/video-edit-pipeline/references/model-routing.md) · [Copyable starter scenarios](skills/video-edit-pipeline/references/scenarios.md)
+[Open the interactive pipeline](https://samin12.github.io/proof-first-video-pipeline/) · [Stage-by-stage guide](skills/video-edit-pipeline/references/pipeline.md) · [Model responsibilities](skills/video-edit-pipeline/references/model-routing.md) · [Example editing prompts](#example-prompts-for-editing-a-video)
 
 The interactive map also ships at `skills/video-edit-pipeline/assets/pipeline/index.html` and opens offline. Select a stage to see its model tier, tools, inputs, output and quality gate. It is a reference map, not a live dashboard or a model launcher.
 
@@ -67,14 +67,60 @@ The skill is linked into `~/.agents/skills/video-edit-pipeline`, a shared locati
 
 For **Claude Code**, run `setup.py install --harness claude`, then use `/video-edit-pipeline`. Other local harnesses can read [SKILL.md](skills/video-edit-pipeline/SKILL.md) and use the same scripts. A browser chat without access to the Mac can prepare research/plans but cannot directly edit local Borumi. [Harness setup and compatibility](skills/video-edit-pipeline/references/harnesses.md).
 
-## Raw-to-finished starter prompt
+## Example prompts for editing a video
 
-Select the coordinator model/effort above. In Codex, paste the following and substitute your actual project names. In Claude Code or Grok Build, change the first line to **`/video-edit-pipeline`**. Use the same outcome and quality checks across harnesses.
+**Trying this on a video you already edited? Start with example 1.** It creates a separate revision for comparison. Example 2 tests a fresh edit from the original raw project against your finished reference.
+
+Select the [coordinator model and effort](#recommended-kickoff-model-effort-and-team) above. Replace bracketed text with your actual project names, paths or instructions. These prompts use Codex's **`$video-edit-pipeline`**; in Claude Code or Grok Build, change the first line to **`/video-edit-pipeline`**. Keep the same brief and review criteria across harnesses.
+
+### 1. Test the pipeline on an already-edited video
+
+Use this for the first trial. The existing finished edit is the baseline, and the new copy is the candidate. This measures the quality of a revision; a raw-to-finished trial measures the full editing workflow.
 
 ```text
 $video-edit-pipeline
 
-Use “Tutorial raw” as the Borumi source and the current finished “Tutorial”
+Test this pipeline on my already-edited Borumi project “[PROJECT NAME]”.
+Locate and verify the project. Preserve it as the baseline and create a
+separate working copy named “[PROJECT NAME] — pipeline test”. Inspect the
+existing edit, transcript and proof assets before deciding what to change.
+
+Improve pacing, clarity, proof readability, captions and audio only where
+there is a concrete benefit. Preserve my meaning, voice and established
+visual style. Keep good existing edits and visuals. Do not rebuild them
+just to exercise every pipeline stage.
+
+Start with one representative scene, aiming for a 30–60-second comparison.
+Use a separate scene-scoped pilot job and protect the rest of the timeline.
+Save matching baseline and candidate previews, using the same source passage
+even if their edited durations differ. Have the capable coordinator watch
+and hear both. If the candidate passes the same quality bar, continue with
+the accepted treatment in a fresh full-job snapshot of the working copy.
+If it does not, keep the baseline treatment and report the specific issue.
+
+Use the skill's model/effort table: High coordinator effort for planning,
+editorial decisions and review; Medium for routine execution when supported.
+Use at most two bounded preparation workers, explicitly setting and checking
+their actual models and effort. Keep one timeline writer. Reuse existing
+research, captures and templates; research only new, changed or stale claims.
+Apply any cuts before refreshing timings and placing affected visuals.
+
+Deliver the reviewed candidate export and a before/after comparison with
+timestamps: what changed, what improved, any regressions and unresolved issues.
+Record elapsed time, models/effort, retries and actual usage-meter readings
+when available; mark unavailable usage as unknown. Save the job folder so
+another harness can resume. Use existing authorized capacity; no extra paid
+API/generation jobs without an agreed budget. Do not upload or publish.
+```
+
+<a id="raw-to-finished-starter-prompt"></a>
+
+### 2. Raw-to-finished starter prompt
+
+```text
+$video-edit-pipeline
+
+Use “[RAW PROJECT]” as the Borumi source and the current finished “[REFERENCE]”
 as the style and quality reference. Locate and verify both. Create a separate
 working copy; preserve the originals and existing working skills.
 
@@ -100,6 +146,74 @@ Flag unsupported claims. Do not upload or publish the video.
 ```
 
 The runner scopes by scene, so the coordinator must select a real scene ID for the pilot; an unscoped job prepares the whole video. [Exact pilot commands, preparation-only mode, reels, and cross-harness resume prompts](skills/video-edit-pipeline/references/scenarios.md).
+
+### 3. Make one specific improvement
+
+Use this when you already know what needs fixing. Replace the example change with your own request.
+
+```text
+$video-edit-pipeline
+
+Open the edited Borumi project “[PROJECT NAME]” and make a separate working
+copy named “[PROJECT NAME] — targeted fix”. Change only this:
+[Example: tighten the repeated explanation in scene 3 and enlarge the tweet
+so its evidence is readable. Preserve the rest of the video.]
+
+Use the smallest applicable workflow. Reuse the existing transcript, sources,
+captures and visual treatment. Use one coordinator; add a bounded worker only
+if independent preparation will help. Use the skill's recommended model/effort
+settings. Keep one timeline writer. If cuts change timing, refresh it before
+updating the affected visuals and captions.
+
+Review the changed passage and its joins with the surrounding footage.
+Export the revised video, give me a before/after preview of the changed area,
+and list the exact changes and any unresolved issue. Save a checkpoint.
+Use existing authorized capacity; no extra paid API/generation jobs without
+an agreed budget. Do not upload or publish.
+```
+
+### 4. Make a reel from the finished video
+
+```text
+$video-edit-pipeline
+
+Use the reviewed finished video at “[MASTER PATH]” and its Borumi project
+“[PROJECT NAME]”. Create a separate reel job; preserve the master and project.
+Find three self-contained 30–60-second moments and render the strongest one
+as a 1080x1920 reel. Keep the speaker's meaning and include a clear payoff.
+
+Reuse the existing transcript, verified proof and visual style. Use original
+camera/screen layers when available; keep the speaker, captions and evidence
+readable on a phone. Flag a framing limitation if only a flattened master is
+available. Research only new or changed claims. Use the skill's model/effort
+settings, local timing/render tools and at most two preparation workers.
+
+Review the actual export for pacing, crop, captions, evidence and audio sync.
+Deliver the reel, its source ranges and a short explanation of the selection.
+Save the job and review evidence. Use existing authorized capacity; no extra
+paid API/generation jobs without an agreed budget. Do not upload or publish.
+```
+
+### 5. Resume in Codex, Claude or Grok after a usage limit
+
+```text
+$video-edit-pipeline
+
+Resume the video edit saved at “[JOB FOLDER]”. Read the goal, checkpoint,
+pipeline state and unresolved findings. Verify the current Borumi project
+and saved artifact hashes. Continue only ready or invalidated work, reusing
+accepted cuts, sources, templates and renders whose inputs still match.
+
+Use this harness's supported models and effort settings for the recorded
+roles. Report actual assignments and fallbacks. Keep at most two preparation
+workers and one timeline writer. Preserve the original project, reference
+and current working copy. Keep the job's existing scope and spending limits.
+Finish its requested deliverable and review; do not upload or publish.
+```
+
+For a **preparation-only trial**, append this to example 1 or 2: “Use `--plan-only`. Return the proposed cuts, proof gaps, visual treatment and model assignments. Stop before timeline writes, generation or rendering.” A plan-only result is a proposal; compare actual exports to judge video quality.
+
+For a **cross-model comparison**, run example 1 or 2 from the same untouched baseline in a separate working copy and job folder per harness. Use the same source passage, brief and quality criteria. Record whether each run had a warm asset cache, along with wall time, correction rounds and available usage readings. Compare pacing, meaning, evidence readability, caption accuracy and audio sync. Keep raw-to-finished results separate from revision results, and report unknown usage without estimating a savings percentage.
 
 ## How this saves time and usage
 
